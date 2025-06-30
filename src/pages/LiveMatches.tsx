@@ -4,7 +4,6 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import axios from "axios"
 import { Clock, Trophy, Target, Zap, Calendar } from "lucide-react"
-import type { Match } from "../types"
 
 // Componentes UI inline
 const Badge = ({
@@ -73,6 +72,22 @@ interface GoalType {
   team: string
   minute: number
   createdAt: string
+}
+
+interface Match {
+  _id: string
+    teamA: Team | string  
+    teamB: Team | string
+    scoreA: number
+    scoreB: number
+    goals?: GoalType[]
+    date: string
+    status: "not_started" | "live" | "paused" | "suspended" | "finished"
+    startTime?: string
+    pausedTime?: string
+    resumeOffset?: number
+    currentStage?: "regular" | "extra_time" | "penalties"
+    tournament: Tournament | string
 }
 
 interface LiveMatch extends Match {

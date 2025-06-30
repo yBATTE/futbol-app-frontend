@@ -28,7 +28,7 @@ const LoginPage = () => {
           )}
           <p className="text-gray-600 mb-4">Redirigiendo...</p>
           <button
-            onClick={() => logout({ returnTo: window.location.origin })}
+            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
             className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
           >
             Cerrar sesión

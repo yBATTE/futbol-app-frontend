@@ -151,7 +151,7 @@ const Navbar = () => {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => logout({ returnTo: window.location.origin })}
+                  onClick={() => logout({ logoutParams: {returnTo: window.location.origin} })}
                   className="flex items-center space-x-2"
                 >
                   <LogOut className="h-4 w-4" />
@@ -261,7 +261,7 @@ const Navbar = () => {
                     {/* Cerrar sesión móvil */}
                     <button
                       onClick={() => {
-                        logout({ returnTo: window.location.origin })
+                        logout({ logoutParams: { returnTo: window.location.origin } })
                         setIsMobileMenuOpen(false)
                       }}
                       className="w-full flex items-center space-x-3 px-3 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors mt-2"

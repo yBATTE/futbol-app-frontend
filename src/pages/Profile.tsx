@@ -141,9 +141,9 @@ const Profile: React.FC = () => {
     window.location.href = `https://${import.meta.env.VITE_AUTH0_DOMAIN}/u/change-password`
   }
 
-  const handleLogout = () => {
-    logout({ returnTo: window.location.origin })
-  }
+const handleLogout = () => {
+  logout({ logoutParams: { returnTo: window.location.origin } });
+}
 
   if (!isAuthenticated || !user) {
     return (

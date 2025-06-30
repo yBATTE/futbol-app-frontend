@@ -1139,7 +1139,7 @@ const AdminDashboard: React.FC = () => {
                           )}
                           {match.status === "live" && (
                             <Button
-                              variant="warning"
+                              variant="secondary"
                               size="sm"
                               onClick={() => handleMatchAction(match._id, "pause")}
                               className="flex items-center space-x-2"
