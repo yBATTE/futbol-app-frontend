@@ -7,7 +7,7 @@ import axios from "axios"
 import { ArrowLeft, Users, Trophy, Shirt, ChevronDown, User } from "lucide-react"
 import type { Player, Team } from "../types"
 
-// Componentes UI inline
+// Componentes UI inline (mantén todos los existentes)
 const Badge = ({
   children,
   variant = "default",
@@ -49,6 +49,7 @@ const Button = ({
     default: "h-10 py-2 px-4",
     sm: "h-9 px-3 rounded-md",
   }
+
   return (
     <button
       className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
@@ -121,23 +122,44 @@ const TeamLineup: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([])
   const [currentTeam, setCurrentTeam] = useState<Team | null>(initialTeam || null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchTeams = async () => {
     try {
+      console.log("🔍 Obteniendo equipos...")
       const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/team`)
+      console.log("✅ Equipos obtenidos:", res.data)
       setTeams(res.data)
     } catch (error) {
-      console.error("Error al obtener los equipos:", error)
+      console.error("❌ Error al obtener los equipos:", error)
+      setError("Error cargando equipos")
     }
   }
 
+  // ✅ FUNCIÓN CORREGIDA - Usar import.meta.env en lugar de process.env
   const fetchPlayers = async (teamId: string) => {
     setLoading(true)
+    setError(null)
     try {
-      const res = await axios.get(`${process.env.VITE_BACKEND_URL}/api/players/lineup/${teamId}`)
+      console.log("🔍 Obteniendo jugadores para equipo:", teamId)
+      console.log("🌐 URL del backend:", import.meta.env.VITE_BACKEND_URL)
+
+      const url = `${import.meta.env.VITE_BACKEND_URL}/api/players/lineup/${teamId}`
+      console.log("📡 URL completa:", url)
+
+      const res = await axios.get(url)
+      console.log("✅ Jugadores obtenidos:", res.data)
       setPlayers(res.data)
-    } catch (error) {
-      console.error("Error al obtener jugadores:", error)
+
+      if (res.data.length === 0) {
+        console.log("⚠️ No se encontraron jugadores para este equipo")
+      }
+    } catch (error: any) {
+      console.error("❌ Error al obtener jugadores:", error)
+      console.error("❌ Error response:", error.response?.data)
+      console.error("❌ Error status:", error.response?.status)
+      setError(`Error cargando jugadores: ${error.response?.data?.message || error.message}`)
+      setPlayers([])
     } finally {
       setLoading(false)
     }
@@ -146,11 +168,13 @@ const TeamLineup: React.FC = () => {
   useEffect(() => {
     fetchTeams()
     if (initialTeam) {
+      console.log("🎯 Equipo inicial detectado:", initialTeam.name)
       fetchPlayers(initialTeam._id)
     }
   }, [])
 
   const handleTeamSelect = (selectedId: string) => {
+    console.log("🎯 Equipo seleccionado:", selectedId)
     const selectedTeam = teams.find((t) => t._id === selectedId)
     if (selectedTeam) {
       setCurrentTeam(selectedTeam)
@@ -199,6 +223,26 @@ const TeamLineup: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* ✅ MOSTRAR ERRORES SI EXISTEN */}
+        {error && (
+          <Card className="mb-8 border-red-200 bg-red-50">
+            <CardContent className="py-4">
+              <div className="flex items-center space-x-2 text-red-800">
+                <span>⚠️</span>
+                <span>{error}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => currentTeam && fetchPlayers(currentTeam._id)}
+                  className="ml-auto"
+                >
+                  Reintentar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Selector de equipo */}
         {!currentTeam && (
@@ -250,15 +294,21 @@ const TeamLineup: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setCurrentTeam(null)
-                      setPlayers([])
-                    }}
-                  >
-                    Cambiar Equipo
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" onClick={() => fetchPlayers(currentTeam._id)} disabled={loading}>
+                      {loading ? "Cargando..." : "Actualizar"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setCurrentTeam(null)
+                        setPlayers([])
+                        setError(null)
+                      }}
+                    >
+                      Cambiar Equipo
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
             </Card>
@@ -292,13 +342,18 @@ const TeamLineup: React.FC = () => {
                 <CardContent className="text-center py-12">
                   <User className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                   <h3 className="text-xl font-semibold text-gray-700 mb-2">No hay jugadores registrados</h3>
-                  <p className="text-gray-500">Este equipo aún no tiene jugadores asignados</p>
+                  <p className="text-gray-500 mb-4">Este equipo aún no tiene jugadores asignados</p>
+                  <div className="text-sm text-gray-400 space-y-1">
+                    <p>🔍 Team ID: {currentTeam._id}</p>
+                    <p>🌐 Backend URL: {import.meta.env.VITE_BACKEND_URL}</p>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-8">
                 {Object.entries(groupPlayersByPosition(players)).map(([position, positionPlayers]) => {
                   if (positionPlayers.length === 0) return null
+
                   return (
                     <Card key={position}>
                       <CardHeader>
@@ -312,7 +367,7 @@ const TeamLineup: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                           {positionPlayers.map((player, idx) => (
                             <div
-                              key={idx}
+                              key={player._id || idx}
                               className={`p-4 rounded-lg border-2 transition-all hover:shadow-md hover:scale-105 ${
                                 positionColors[position as keyof typeof positionColors]
                               }`}
@@ -357,7 +412,6 @@ const TeamLineup: React.FC = () => {
                       <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-white transform -translate-y-1/2"></div>
                       <div className="absolute top-1/2 left-1/2 w-20 h-20 border-2 border-white rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
                     </div>
-
                     {/* Mensaje informativo */}
                     <div className="relative z-10 text-center text-green-800">
                       <p className="text-lg font-semibold mb-2">Formación Táctica</p>

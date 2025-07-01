@@ -6,10 +6,10 @@ import { useAuth0 } from "@auth0/auth0-react"
 import {
   Shield,
   Users,
-  Trophy,
   Settings,
-  Plus,
+  Trophy,
   UserPlus,
+  Plus,
   Calendar,
   Crown,
   Database,
@@ -18,18 +18,16 @@ import {
   CheckCircle,
   Clock,
   Play,
-  MapPin,
-  Flag,
-  User,
-  Building,
-  Minus,
   Pause,
   Timer,
   Target,
   Zap,
   X,
 } from "lucide-react"
+
 import axios from "axios"
+import { toast, ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
 // Componentes UI mejorados
 const Badge = ({
@@ -171,7 +169,7 @@ interface LiveMatch {
   scoreA: number
   scoreB: number
   tournament: Tournament
-  status: "not_started" | "live" | "paused" | "suspended" | "finished"
+  status: "not_started" | "live" | "paused" | "suspended" | "finish"
   startTime?: string
   pausedTime?: string
   resumeOffset?: number
@@ -204,10 +202,12 @@ const AdminDashboard: React.FC = () => {
     team: "A" as "A" | "B",
     teamId: "",
     playerId: "",
-    customName: "",
+    firstName: "",
+    lastName: "",
     customNumber: "",
     assistId: "",
-    assistCustomName: "",
+    assistFirstName: "",
+    assistLastName: "",
     assistCustomNumber: "",
   })
   const [teamPlayers, setTeamPlayers] = useState<any[]>([])
@@ -220,13 +220,12 @@ const AdminDashboard: React.FC = () => {
   const [isSubmittingPlayers, setIsSubmittingPlayers] = useState(false)
   const [isSubmittingTournament, setIsSubmittingTournament] = useState(false)
 
-  // Datos de formularios
+  // ✅ DATOS DE FORMULARIOS ACTUALIZADOS - SIN CAMPOS DE SCORE
   const [matchFormData, setMatchFormData] = useState({
     teamA: "",
     teamB: "",
-    scoreA: 0,
-    scoreB: 0,
     tournament: "",
+    // ❌ Removidos: scoreA y scoreB - siempre inician en 0-0
   })
 
   const [clubFormData, setClubFormData] = useState({
@@ -266,6 +265,53 @@ const AdminDashboard: React.FC = () => {
     status: "scheduled",
   })
 
+  // ✅ CONFIGURACIÓN DE TOAST
+  const showToast = {
+    success: (message: string) =>
+      toast.success(message, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }),
+    error: (message: string) =>
+      toast.error(message, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }),
+    warning: (message: string) =>
+      toast.warning(message, {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }),
+    info: (message: string) =>
+      toast.info(message, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      }),
+  }
+
+  // ✅ FUNCIÓN HELPER PARA PARSEAR NÚMEROS
+  const safeParseInt = (value: string | number): number => {
+    if (typeof value === "number") return value
+    const parsed = Number.parseInt(value, 10)
+    return isNaN(parsed) ? 0 : parsed
+  }
+
   // Función para verificar permisos de admin
   const checkAdminStatus = async () => {
     if (!isAuthenticated || !user) {
@@ -283,7 +329,6 @@ const AdminDashboard: React.FC = () => {
       })
 
       const token = await getAccessTokenSilently()
-
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/users/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -324,7 +369,6 @@ const AdminDashboard: React.FC = () => {
       } else {
         setError("Error verificando permisos. Intenta nuevamente")
       }
-
       setIsAdmin(false)
     } finally {
       setLoading(false)
@@ -337,6 +381,7 @@ const AdminDashboard: React.FC = () => {
       setTeams(res.data)
     } catch (e) {
       console.error(e)
+      showToast.error("Error cargando equipos")
     }
   }
 
@@ -346,6 +391,7 @@ const AdminDashboard: React.FC = () => {
       setTournaments(res.data)
     } catch (e) {
       console.error(e)
+      showToast.error("Error cargando torneos")
     }
   }
 
@@ -355,64 +401,78 @@ const AdminDashboard: React.FC = () => {
       setLiveMatches(res.data)
     } catch (e) {
       console.error(e)
+      showToast.error("Error cargando partidos en vivo")
     }
   }
 
-  // Handlers para controlar partidos en vivo
+  // ✅ HANDLERS ACTUALIZADOS CON TOAST NOTIFICATIONS
   const handleMatchAction = async (id: string, action: string, body?: any) => {
     try {
       console.log(`Ejecutando acción ${action} para partido ${id}`, body)
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/live-matches/${id}/${action}`, body)
       fetchLiveMatches()
-      alert(`Acción ${action} ejecutada correctamente`)
+      showToast.success(`Acción ${action} ejecutada correctamente`)
     } catch (error) {
       console.error("Error en handleMatchAction:", error)
-      alert("Error en la acción del partido")
+      showToast.error("Error en la acción del partido")
     }
   }
 
-  // Handlers para crear partido
+  // ✅ HANDLER PARA CREAR PARTIDO ACTUALIZADO - SIN CAMPOS DE SCORE
   const handleCreateMatch = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validaciones
     if (matchFormData.teamA === matchFormData.teamB) {
-      alert("Los equipos no pueden ser iguales")
+      showToast.error("Los equipos no pueden ser iguales")
       return
     }
-
     if (!matchFormData.tournament) {
-      alert("Debes seleccionar un torneo")
+      showToast.error("Debes seleccionar un torneo")
+      return
+    }
+    if (!matchFormData.teamA || !matchFormData.teamB) {
+      showToast.error("Debes seleccionar ambos equipos")
       return
     }
 
     try {
       setIsSubmittingMatch(true)
       const token = await getAccessTokenSilently()
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/live-matches`,
-        { ...matchFormData, date: new Date() },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+
+      // ✅ PAYLOAD ACTUALIZADO - SIEMPRE INICIA EN 0-0
+      const payload = {
+        teamA: matchFormData.teamA,
+        teamB: matchFormData.teamB,
+        tournament: matchFormData.tournament,
+        scoreA: 0, // ✅ Siempre 0
+        scoreB: 0, // ✅ Siempre 0
+        date: new Date(),
+      }
+
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/live-matches`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      )
-      alert("Partido creado exitosamente")
-      setMatchFormData({ teamA: "", teamB: "", scoreA: 0, scoreB: 0, tournament: "" })
+      })
+
+      showToast.success("🎉 Partido creado exitosamente")
+      setMatchFormData({ teamA: "", teamB: "", tournament: "" })
       setShowMatchForm(false)
       fetchLiveMatches()
     } catch (e: any) {
       console.error(e)
       if (e.response && e.response.data && e.response.data.message) {
-        alert(`Error: ${e.response.data.message}`)
+        showToast.error(`Error: ${e.response.data.message}`)
       } else {
-        alert("Error creando partido")
+        showToast.error("Error creando partido")
       }
     } finally {
       setIsSubmittingMatch(false)
     }
   }
 
-  // Handlers para crear club
+  // ✅ HANDLER PARA CREAR CLUB ACTUALIZADO
   const handleCreateClub = async (e: React.FormEvent) => {
     e.preventDefault()
     if (
@@ -421,14 +481,14 @@ const AdminDashboard: React.FC = () => {
       !clubFormData.coach.trim() ||
       !clubFormData.stadium.trim()
     ) {
-      alert("Por favor completa todos los campos obligatorios")
+      showToast.warning("Por favor completa todos los campos obligatorios")
       return
     }
 
     try {
       setIsSubmittingClub(true)
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/team`, clubFormData)
-      alert("Club creado correctamente")
+      showToast.success("🏆 Club creado correctamente")
       setClubFormData({
         name: "",
         abreviation: "",
@@ -438,16 +498,16 @@ const AdminDashboard: React.FC = () => {
         stadium: "",
       })
       setShowClubForm(false)
-      fetchTeams() // Actualizar lista de equipos
+      fetchTeams()
     } catch (error) {
       console.error("Error al crear el club:", error)
-      alert("Ocurrió un error al guardar el club")
+      showToast.error("Ocurrió un error al guardar el club")
     } finally {
       setIsSubmittingClub(false)
     }
   }
 
-  // Handlers para crear jugadores
+  // ✅ HANDLER PARA CREAR JUGADORES ACTUALIZADO
   const updatePlayer = (index: number, updated: Partial<Player>) => {
     setPlayersFormData((prev) => ({
       ...prev,
@@ -472,7 +532,7 @@ const AdminDashboard: React.FC = () => {
   const handleCreatePlayers = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!playersFormData.clubId) {
-      alert("Selecciona un club")
+      showToast.warning("Selecciona un club")
       return
     }
 
@@ -481,7 +541,7 @@ const AdminDashboard: React.FC = () => {
     )
 
     if (incomplete) {
-      alert("Completa todos los campos de los jugadores")
+      showToast.warning("Completa todos los campos de los jugadores")
       return
     }
 
@@ -496,7 +556,7 @@ const AdminDashboard: React.FC = () => {
       }))
 
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/players/bulk`, payload)
-      alert("Jugadores creados correctamente")
+      showToast.success("⚽ Jugadores creados correctamente")
       setPlayersFormData({
         clubId: "",
         players: [{ firstName: "", lastName: "", number: 0, position: "" }],
@@ -504,13 +564,13 @@ const AdminDashboard: React.FC = () => {
       setShowPlayersForm(false)
     } catch (err) {
       console.error("Error al crear jugadores:", err)
-      alert("Error al crear jugadores")
+      showToast.error("Error al crear jugadores")
     } finally {
       setIsSubmittingPlayers(false)
     }
   }
 
-  // Handlers para crear torneo
+  // ✅ HANDLER PARA CREAR TORNEO ACTUALIZADO
   const toggleTeam = (teamId: string) => {
     setTournamentFormData((prev) => ({
       ...prev,
@@ -523,7 +583,7 @@ const AdminDashboard: React.FC = () => {
   const handleCreateTournament = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tournamentFormData.name.trim() || !tournamentFormData.type || !tournamentFormData.season.trim()) {
-      alert("Completa al menos nombre, tipo y temporada")
+      showToast.warning("Completa al menos nombre, tipo y temporada")
       return
     }
 
@@ -540,7 +600,7 @@ const AdminDashboard: React.FC = () => {
       }
 
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/tournaments`, payload)
-      alert("Torneo creado correctamente")
+      showToast.success("🏆 Torneo creado correctamente")
       setTournamentFormData({
         name: "",
         type: "",
@@ -551,10 +611,10 @@ const AdminDashboard: React.FC = () => {
         selectedTeams: [],
       })
       setShowTournamentForm(false)
-      fetchTournaments() // Actualizar lista de torneos
+      fetchTournaments()
     } catch (err) {
       console.error("Error al crear torneo:", err)
-      alert("Error al crear torneo")
+      showToast.error("Error al crear torneo")
     } finally {
       setIsSubmittingTournament(false)
     }
@@ -563,12 +623,11 @@ const AdminDashboard: React.FC = () => {
   const handleCreateScheduledMatch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (scheduledMatchFormData.teamA === scheduledMatchFormData.teamB) {
-      alert("Los equipos no pueden ser iguales")
+      showToast.error("Los equipos no pueden ser iguales")
       return
     }
-
     if (!scheduledMatchFormData.tournament || !scheduledMatchFormData.date || !scheduledMatchFormData.time) {
-      alert("Debes completar fecha, hora, equipos y torneo")
+      showToast.warning("Debes completar fecha, hora, equipos y torneo")
       return
     }
 
@@ -580,7 +639,7 @@ const AdminDashboard: React.FC = () => {
           Authorization: `Bearer ${token}`,
         },
       })
-      alert("Partido programado exitosamente")
+      showToast.success("📅 Partido programado exitosamente")
       setScheduledMatchFormData({
         date: "",
         time: "",
@@ -597,9 +656,9 @@ const AdminDashboard: React.FC = () => {
     } catch (e: any) {
       console.error(e)
       if (e.response && e.response.data && e.response.data.message) {
-        alert(`Error: ${e.response.data.message}`)
+        showToast.error(`Error: ${e.response.data.message}`)
       } else {
-        alert("Error programando partido")
+        showToast.error("Error programando partido")
       }
     } finally {
       setIsSubmittingScheduledMatch(false)
@@ -627,6 +686,131 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
+  const handleGoalClick = async (matchId: string, team: "A" | "B", teamId: string) => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/players/lineup/${teamId}`)
+      setTeamPlayers(res.data)
+      setGoalFormData({
+        matchId,
+        team,
+        teamId,
+        playerId: "",
+        firstName: "",
+        lastName: "",
+        customNumber: "",
+        assistId: "",
+        assistFirstName: "",
+        assistLastName: "",
+        assistCustomNumber: "",
+      })
+      setShowCustomPlayer(false)
+      setShowCustomAssist(false)
+      setShowGoalForm(true)
+    } catch (error) {
+      console.error("Error al obtener jugadores:", error)
+      showToast.error("Error cargando jugadores")
+    }
+  }
+
+  // ✅ FUNCIÓN PARA CONFIRMAR GOL ACTUALIZADA
+  const confirmGoal = async () => {
+    try {
+      console.log("🎯 Iniciando confirmGoal con datos:", goalFormData)
+
+      if (!goalFormData.matchId || !goalFormData.team || !goalFormData.teamId) {
+        showToast.error("Faltan datos del partido")
+        return
+      }
+
+      const hasScorer = goalFormData.playerId || (goalFormData.firstName && goalFormData.lastName)
+      if (!hasScorer) {
+        showToast.warning("Debes seleccionar un goleador o ingresar los datos del jugador")
+        return
+      }
+
+      const body: any = {
+        team: goalFormData.team,
+        delta: 1,
+      }
+
+      if (goalFormData.playerId && goalFormData.playerId !== "custom") {
+        body.scorerId = goalFormData.playerId
+        console.log("✅ Usando goleador existente:", goalFormData.playerId)
+      } else if (goalFormData.firstName && goalFormData.lastName) {
+        if (!goalFormData.firstName.trim() || !goalFormData.lastName.trim()) {
+          showToast.warning("Debes completar el nombre y apellido del jugador")
+          return
+        }
+
+        body.scorerCustom = {
+          firstName: goalFormData.firstName.trim(),
+          lastName: goalFormData.lastName.trim(),
+          number: goalFormData.customNumber ? Number.parseInt(goalFormData.customNumber) : 0,
+          team: goalFormData.teamId,
+          position: "Delantero",
+        }
+        console.log("✅ Usando goleador custom:", body.scorerCustom)
+      }
+
+      if (goalFormData.assistId && goalFormData.assistId !== "custom") {
+        body.assistId = goalFormData.assistId
+        console.log("✅ Usando asistente existente:", goalFormData.assistId)
+      } else if (goalFormData.assistFirstName && goalFormData.assistLastName) {
+        if (goalFormData.assistFirstName.trim() && goalFormData.assistLastName.trim()) {
+          body.assistCustom = {
+            firstName: goalFormData.assistFirstName.trim(),
+            lastName: goalFormData.assistLastName.trim(),
+            number: goalFormData.assistCustomNumber ? Number.parseInt(goalFormData.assistCustomNumber) : 0,
+            team: goalFormData.teamId,
+            position: "Mediocampista",
+          }
+          console.log("✅ Usando asistente custom:", body.assistCustom)
+        }
+      }
+
+      console.log("🚀 Enviando gol con datos:", body)
+
+      const response = await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/api/live-matches/${goalFormData.matchId}/score`,
+        body,
+      )
+
+      console.log("✅ Respuesta del servidor:", response.data)
+
+      setShowGoalForm(false)
+      setGoalFormData({
+        matchId: "",
+        team: "A",
+        teamId: "",
+        playerId: "",
+        firstName: "",
+        lastName: "",
+        customNumber: "",
+        assistId: "",
+        assistFirstName: "",
+        assistLastName: "",
+        assistCustomNumber: "",
+      })
+
+      setShowCustomPlayer(false)
+      setShowCustomAssist(false)
+      await fetchLiveMatches()
+
+      showToast.success("⚽ ¡Gol registrado correctamente!")
+    } catch (error: any) {
+      console.error("❌ Error al registrar gol:", error)
+
+      let errorMessage = "Error registrando gol"
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
+      showToast.error(`Error: ${errorMessage}`)
+    }
+  }
+
   useEffect(() => {
     checkAdminStatus()
     fetchTeams()
@@ -636,7 +820,6 @@ const AdminDashboard: React.FC = () => {
 
   // Definición de todas las acciones administrativas
   const adminActions: AdminAction[] = [
-    // Gestión
     {
       id: "manage-roles",
       title: "Administrar Roles",
@@ -667,7 +850,6 @@ const AdminDashboard: React.FC = () => {
       priority: "high",
       status: "active",
     },
-    // Creación
     {
       id: "create-club",
       title: "Crear Club",
@@ -718,7 +900,6 @@ const AdminDashboard: React.FC = () => {
       priority: "high",
       status: "active",
     },
-    // Configuración
     {
       id: "database-management",
       title: "Gestión de Base de Datos",
@@ -784,66 +965,6 @@ const AdminDashboard: React.FC = () => {
         return <CheckCircle className="h-4 w-4 text-green-500" />
       default:
         return null
-    }
-  }
-
-  const handleGoalClick = async (matchId: string, team: "A" | "B", teamId: string) => {
-    try {
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/players/lineup/${teamId}`)
-      setTeamPlayers(res.data)
-      setGoalFormData({
-        matchId,
-        team,
-        teamId,
-        playerId: "",
-        customName: "",
-        customNumber: "",
-        assistId: "",
-        assistCustomName: "",
-        assistCustomNumber: "",
-      })
-      setShowCustomPlayer(false)
-      setShowCustomAssist(false)
-      setShowGoalForm(true)
-    } catch (error) {
-      console.error("Error al obtener jugadores:", error)
-      alert("Error cargando jugadores")
-    }
-  }
-
-  const confirmGoal = async () => {
-    const body: any = { team: goalFormData.team, delta: 1 }
-
-    if (goalFormData.playerId && goalFormData.playerId !== "custom") {
-      body.scorerId = goalFormData.playerId
-    } else if (goalFormData.customName) {
-      body.scorerCustom = {
-        firstName: goalFormData.customName,
-        lastName: "",
-        number: goalFormData.customNumber,
-        team: goalFormData.teamId,
-      }
-    }
-
-    if (goalFormData.assistId && goalFormData.assistId !== "custom") {
-      body.assistId = goalFormData.assistId
-    } else if (goalFormData.assistCustomName) {
-      body.assistCustom = {
-        firstName: goalFormData.assistCustomName,
-        lastName: "",
-        number: goalFormData.assistCustomNumber,
-        team: goalFormData.teamId,
-      }
-    }
-
-    try {
-      await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/live-matches/${goalFormData.matchId}/score`, body)
-      setShowGoalForm(false)
-      fetchLiveMatches()
-      alert("Gol registrado correctamente")
-    } catch (error) {
-      console.error("Error al registrar goleador:", error)
-      alert("Error registrando gol")
     }
   }
 
@@ -946,6 +1067,20 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* ✅ TOAST CONTAINER */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -1065,7 +1200,7 @@ const AdminDashboard: React.FC = () => {
                             } else if (action.id === "manage-live-matches") {
                               setShowLiveMatchesControl(true)
                             } else {
-                              alert(`Navegando a: ${action.route}`)
+                              showToast.info(`Navegando a: ${action.route}`)
                             }
                           }}
                           disabled={action.status === "maintenance"}
@@ -1230,24 +1365,164 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Resto de modales existentes... */}
-        {/* Modal para crear partido */}
+        {/* ✅ MODAL DE GOLEADOR COMPLETAMENTE CORREGIDO */}
+        {showGoalForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b">
+                <h3 className="text-lg font-semibold text-gray-800">¿Quién hizo el gol?</h3>
+                <button
+                  onClick={() => setShowGoalForm(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {/* Goleador */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Goleador</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={goalFormData.playerId}
+                    onChange={(e) => {
+                      const sel = e.target.value
+                      setGoalFormData({ ...goalFormData, playerId: sel })
+                      setShowCustomPlayer(sel === "custom")
+                      if (sel !== "custom") {
+                        setGoalFormData((prev) => ({
+                          ...prev,
+                          firstName: "",
+                          lastName: "",
+                          customNumber: "",
+                        }))
+                      }
+                    }}
+                  >
+                    <option value="">Seleccionar jugador</option>
+                    {teamPlayers.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        #{p.number} - {p.firstName} {p.lastName}
+                      </option>
+                    ))}
+                    <option value="custom">Otro jugador...</option>
+                  </select>
+                </div>
+
+                {showCustomPlayer && (
+                  <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Nombre del jugador"
+                      value={goalFormData.firstName}
+                      onChange={(e) => setGoalFormData({ ...goalFormData, firstName: e.target.value })}
+                    />
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Apellido del jugador"
+                      value={goalFormData.lastName}
+                      onChange={(e) => setGoalFormData({ ...goalFormData, lastName: e.target.value })}
+                    />
+                    <input
+                      type="number"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Número del jugador"
+                      value={goalFormData.customNumber}
+                      onChange={(e) => setGoalFormData({ ...goalFormData, customNumber: e.target.value })}
+                    />
+                  </div>
+                )}
+
+                {/* Asistencia */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Asistencia (opcional)</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={goalFormData.assistId || ""}
+                    onChange={(e) => {
+                      const sel = e.target.value
+                      setGoalFormData({ ...goalFormData, assistId: sel })
+                      setShowCustomAssist(sel === "custom")
+                      if (sel !== "custom") {
+                        setGoalFormData((prev) => ({
+                          ...prev,
+                          assistFirstName: "",
+                          assistLastName: "",
+                          assistCustomNumber: "",
+                        }))
+                      }
+                    }}
+                  >
+                    <option value="">Sin asistencia</option>
+                    {teamPlayers.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        #{p.number} - {p.firstName} {p.lastName}
+                      </option>
+                    ))}
+                    <option value="custom">Otro jugador...</option>
+                  </select>
+                </div>
+
+                {showCustomAssist && (
+                  <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Nombre del jugador asistente"
+                      value={goalFormData.assistFirstName}
+                      onChange={(e) => setGoalFormData({ ...goalFormData, assistFirstName: e.target.value })}
+                    />
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Apellido del jugador asistente"
+                      value={goalFormData.assistLastName}
+                      onChange={(e) => setGoalFormData({ ...goalFormData, assistLastName: e.target.value })}
+                    />
+                    <input
+                      type="number"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Número del jugador asistente"
+                      value={goalFormData.assistCustomNumber}
+                      onChange={(e) => setGoalFormData({ ...goalFormData, assistCustomNumber: e.target.value })}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-2 p-6 border-t">
+                <Button variant="outline" onClick={() => setShowGoalForm(false)}>
+                  Cancelar
+                </Button>
+                <Button variant="success" onClick={confirmGoal}>
+                  Confirmar Gol
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ MODAL PARA CREAR PARTIDO ACTUALIZADO - SIN CAMPOS DE SCORE */}
         {showMatchForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <Card className="w-full max-w-md">
               <CardHeader>
                 <CardTitle>Crear Nuevo Partido</CardTitle>
+                <p className="text-sm text-gray-600">El partido iniciará con marcador 0-0</p>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCreateMatch} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Equipo A</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Equipo A (Local)</label>
                     <Select
                       value={matchFormData.teamA}
                       onChange={(e) => setMatchFormData({ ...matchFormData, teamA: e.target.value })}
                       required
                     >
-                      <option value="">Seleccionar equipo</option>
+                      <option value="">Seleccionar equipo local</option>
                       {teams.map((team) => (
                         <option key={team._id} value={team._id}>
                           {team.name}
@@ -1255,15 +1530,14 @@ const AdminDashboard: React.FC = () => {
                       ))}
                     </Select>
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Equipo B</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Equipo B (Visitante)</label>
                     <Select
                       value={matchFormData.teamB}
                       onChange={(e) => setMatchFormData({ ...matchFormData, teamB: e.target.value })}
                       required
                     >
-                      <option value="">Seleccionar equipo</option>
+                      <option value="">Seleccionar equipo visitante</option>
                       {teams.map((team) => (
                         <option key={team._id} value={team._id}>
                           {team.name}
@@ -1271,7 +1545,6 @@ const AdminDashboard: React.FC = () => {
                       ))}
                     </Select>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Torneo</label>
                     <Select
@@ -1288,29 +1561,15 @@ const AdminDashboard: React.FC = () => {
                     </Select>
                   </div>
 
-                  <div className="flex space-x-2">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Goles Equipo A</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={matchFormData.scoreA}
-                        onChange={(e) =>
-                          setMatchFormData({ ...matchFormData, scoreA: Number.parseInt(e.target.value) || 0 })
-                        }
-                      />
+                  {/* ✅ INFORMACIÓN DEL MARCADOR INICIAL */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-center space-x-2">
+                      <Target className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">Marcador inicial: 0 - 0</span>
                     </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Goles Equipo B</label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={matchFormData.scoreB}
-                        onChange={(e) =>
-                          setMatchFormData({ ...matchFormData, scoreB: Number.parseInt(e.target.value) || 0 })
-                        }
-                      />
-                    </div>
+                    <p className="text-xs text-blue-600 mt-1">
+                      El partido se creará con marcador en cero. Podrás agregar goles durante el partido.
+                    </p>
                   </div>
 
                   <div className="flex space-x-2 pt-4">
@@ -1327,106 +1586,76 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Los demás modales permanecen igual... */}
         {/* Modal para crear club */}
         {showClubForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <Card className="w-full max-w-md">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Trophy className="h-6 w-6 text-yellow-600" />
-                  <span>Crear Nuevo Club</span>
-                </CardTitle>
+                <CardTitle>Crear Nuevo Club</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCreateClub} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Club *</label>
                     <Input
+                      type="text"
                       value={clubFormData.name}
                       onChange={(e) => setClubFormData({ ...clubFormData, name: e.target.value })}
-                      placeholder="Ej: River Plate"
+                      placeholder="Ej: Club Atlético River Plate"
                       required
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Abreviatura *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Abreviación *</label>
                     <Input
+                      type="text"
                       value={clubFormData.abreviation}
                       onChange={(e) => setClubFormData({ ...clubFormData, abreviation: e.target.value })}
-                      placeholder="Ej: RIV"
+                      placeholder="Ej: CARP"
                       required
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        value={clubFormData.location}
-                        onChange={(e) => setClubFormData({ ...clubFormData, location: e.target.value })}
-                        placeholder="Ciudad o región"
-                        className="pl-10"
-                      />
-                    </div>
+                    <Input
+                      type="text"
+                      value={clubFormData.location}
+                      onChange={(e) => setClubFormData({ ...clubFormData, location: e.target.value })}
+                      placeholder="Ej: Buenos Aires"
+                    />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">División</label>
-                    <div className="relative">
-                      <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        value={clubFormData.division}
-                        onChange={(e) => setClubFormData({ ...clubFormData, division: e.target.value })}
-                        placeholder="Ej: Primera División"
-                        className="pl-10"
-                      />
-                    </div>
+                    <Input
+                      type="text"
+                      value={clubFormData.division}
+                      onChange={(e) => setClubFormData({ ...clubFormData, division: e.target.value })}
+                      placeholder="Ej: Primera División"
+                    />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Entrenador *</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        value={clubFormData.coach}
-                        onChange={(e) => setClubFormData({ ...clubFormData, coach: e.target.value })}
-                        placeholder="Nombre del entrenador"
-                        className="pl-10"
-                        required
-                      />
-                    </div>
+                    <Input
+                      type="text"
+                      value={clubFormData.coach}
+                      onChange={(e) => setClubFormData({ ...clubFormData, coach: e.target.value })}
+                      placeholder="Ej: Marcelo Gallardo"
+                      required
+                    />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Estadio *</label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        value={clubFormData.stadium}
-                        onChange={(e) => setClubFormData({ ...clubFormData, stadium: e.target.value })}
-                        placeholder="Nombre del estadio"
-                        className="pl-10"
-                        required
-                      />
-                    </div>
+                    <Input
+                      type="text"
+                      value={clubFormData.stadium}
+                      onChange={(e) => setClubFormData({ ...clubFormData, stadium: e.target.value })}
+                      placeholder="Ej: Estadio Monumental"
+                      required
+                    />
                   </div>
-
                   <div className="flex space-x-2 pt-4">
                     <Button type="submit" disabled={isSubmittingClub} className="flex-1">
-                      {isSubmittingClub ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Guardando...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Crear Club
-                        </>
-                      )}
+                      {isSubmittingClub ? "Creando..." : "Crear Club"}
                     </Button>
                     <Button type="button" variant="outline" onClick={() => setShowClubForm(false)} className="flex-1">
                       Cancelar
@@ -1441,18 +1670,14 @@ const AdminDashboard: React.FC = () => {
         {/* Modal para crear jugadores */}
         {showPlayersForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <UserPlus className="h-6 w-6 text-blue-600" />
-                  <span>Crear Jugadores</span>
-                </CardTitle>
+                <CardTitle>Gestionar Jugadores</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleCreatePlayers} className="space-y-6">
-                  {/* Selección del Club */}
+                <form onSubmit={handleCreatePlayers} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Seleccionar Club *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Seleccionar Club</label>
                     <Select
                       value={playersFormData.clubId}
                       onChange={(e) => setPlayersFormData({ ...playersFormData, clubId: e.target.value })}
@@ -1467,102 +1692,77 @@ const AdminDashboard: React.FC = () => {
                     </Select>
                   </div>
 
-                  {/* Jugadores */}
                   <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-gray-800">Jugadores</h3>
+                      <Button type="button" variant="outline" size="sm" onClick={addPlayer}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Agregar Jugador
+                      </Button>
+                    </div>
+
                     {playersFormData.players.map((player, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="font-medium text-gray-800">Jugador #{index + 1}</h4>
+                      <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-gray-700">Jugador {index + 1}</h4>
                           {playersFormData.players.length > 1 && (
                             <Button type="button" variant="destructive" size="sm" onClick={() => removePlayer(index)}>
-                              <Minus className="h-4 w-4" />
+                              <X className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                            <Input
-                              value={player.firstName}
-                              onChange={(e) => updatePlayer(index, { firstName: e.target.value })}
-                              placeholder="Nombre"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
-                            <Input
-                              value={player.lastName}
-                              onChange={(e) => updatePlayer(index, { lastName: e.target.value })}
-                              placeholder="Apellido"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Número</label>
-                            <Input
-                              type="number"
-                              min={1}
-                              value={player.number}
-                              onChange={(e) => updatePlayer(index, { number: +e.target.value })}
-                              placeholder="Número de camiseta"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Posición</label>
-                            <Select
-                              value={player.position}
-                              onChange={(e) => updatePlayer(index, { position: e.target.value })}
-                              required
-                            >
-                              <option value="">Seleccionar posición</option>
-                              <option value="Delantero">Delantero</option>
-                              <option value="Mediocampista">Mediocampista</option>
-                              <option value="Defensor">Defensor</option>
-                              <option value="Portero">Portero</option>
-                            </Select>
-                          </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Input
+                            type="text"
+                            placeholder="Nombre"
+                            value={player.firstName}
+                            onChange={(e) => updatePlayer(index, { firstName: e.target.value })}
+                            required
+                          />
+                          <Input
+                            type="text"
+                            placeholder="Apellido"
+                            value={player.lastName}
+                            onChange={(e) => updatePlayer(index, { lastName: e.target.value })}
+                            required
+                          />
+                          <Input
+                            type="number"
+                            placeholder="Número"
+                            min="1"
+                            max="99"
+                            value={player.number || ""}
+                            onChange={(e) => updatePlayer(index, { number: safeParseInt(e.target.value) })}
+                            required
+                          />
+                          <Select
+                            value={player.position}
+                            onChange={(e) => updatePlayer(index, { position: e.target.value })}
+                            required
+                          >
+                            <option value="">Posición</option>
+                            <option value="Portero">Portero</option>
+                            <option value="Defensor">Defensor</option>
+                            <option value="Mediocampista">Mediocampista</option>
+                            <option value="Delantero">Delantero</option>
+                          </Select>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Acciones */}
-                  <div className="flex items-center justify-between pt-4">
+                  <div className="flex space-x-2 pt-4">
+                    <Button type="submit" disabled={isSubmittingPlayers} className="flex-1">
+                      {isSubmittingPlayers ? "Creando..." : "Crear Jugadores"}
+                    </Button>
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={addPlayer}
-                      className="flex items-center space-x-2 bg-transparent"
+                      onClick={() => setShowPlayersForm(false)}
+                      className="flex-1"
                     >
-                      <Plus className="h-4 w-4" />
-                      <span>Añadir otro jugador</span>
+                      Cancelar
                     </Button>
-
-                    <div className="flex space-x-2">
-                      <Button
-                        type="submit"
-                        disabled={isSubmittingPlayers || !playersFormData.clubId}
-                        className="flex items-center space-x-2"
-                      >
-                        {isSubmittingPlayers ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Guardando...</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4" />
-                            <span>Guardar jugadores</span>
-                          </>
-                        )}
-                      </Button>
-                      <Button type="button" variant="outline" onClick={() => setShowPlayersForm(false)}>
-                        Cancelar
-                      </Button>
-                    </div>
                   </div>
                 </form>
               </CardContent>
@@ -1573,29 +1773,23 @@ const AdminDashboard: React.FC = () => {
         {/* Modal para crear torneo */}
         {showTournamentForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Trophy className="h-6 w-6 text-yellow-600" />
-                  <span>Crear Nuevo Torneo</span>
-                </CardTitle>
+                <CardTitle>Crear Nuevo Torneo</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleCreateTournament} className="space-y-6">
-                  {/* Información del Torneo */}
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-gray-800">Datos del Torneo</h4>
-
+                <form onSubmit={handleCreateTournament} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Torneo *</label>
                       <Input
+                        type="text"
                         value={tournamentFormData.name}
                         onChange={(e) => setTournamentFormData({ ...tournamentFormData, name: e.target.value })}
-                        placeholder="Nombre del torneo"
+                        placeholder="Ej: Liga Profesional 2024"
                         required
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
                       <Select
@@ -1604,92 +1798,77 @@ const AdminDashboard: React.FC = () => {
                         required
                       >
                         <option value="">Seleccionar tipo</option>
-                        <option value="copa">Copa</option>
-                        <option value="liga">Liga</option>
+                        <option value="Liga">Liga</option>
+                        <option value="Copa">Copa</option>
+                        <option value="Amistoso">Amistoso</option>
+                        <option value="Playoff">Playoff</option>
                       </Select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Temporada *</label>
-                      <Input
-                        value={tournamentFormData.season}
-                        onChange={(e) => setTournamentFormData({ ...tournamentFormData, season: e.target.value })}
-                        placeholder="Ej: 2025/2026"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                      <Input
-                        value={tournamentFormData.description}
-                        onChange={(e) => setTournamentFormData({ ...tournamentFormData, description: e.target.value })}
-                        placeholder="Opcional"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de inicio</label>
-                        <Input
-                          type="date"
-                          value={tournamentFormData.startDate}
-                          onChange={(e) => setTournamentFormData({ ...tournamentFormData, startDate: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de fin</label>
-                        <Input
-                          type="date"
-                          value={tournamentFormData.endDate}
-                          onChange={(e) => setTournamentFormData({ ...tournamentFormData, endDate: e.target.value })}
-                        />
-                      </div>
                     </div>
                   </div>
 
-                  {/* Selección de Equipos */}
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-gray-800">Equipos Participantes</h4>
-                    <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-4 space-y-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Temporada *</label>
+                    <Input
+                      type="text"
+                      value={tournamentFormData.season}
+                      onChange={(e) => setTournamentFormData({ ...tournamentFormData, season: e.target.value })}
+                      placeholder="Ej: 2024"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <Input
+                      type="text"
+                      value={tournamentFormData.description}
+                      onChange={(e) => setTournamentFormData({ ...tournamentFormData, description: e.target.value })}
+                      placeholder="Descripción del torneo"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Inicio</label>
+                      <Input
+                        type="date"
+                        value={tournamentFormData.startDate}
+                        onChange={(e) => setTournamentFormData({ ...tournamentFormData, startDate: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Fin</label>
+                      <Input
+                        type="date"
+                        value={tournamentFormData.endDate}
+                        onChange={(e) => setTournamentFormData({ ...tournamentFormData, endDate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Equipos Participantes</label>
+                    <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3 space-y-2">
                       {teams.map((team) => (
-                        <div key={team._id} className="flex items-center space-x-2">
+                        <label key={team._id} className="flex items-center space-x-2 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={tournamentFormData.selectedTeams.includes(team._id)}
                             onChange={() => toggleTeam(team._id)}
-                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-gray-800">{team.name}</span>
-                        </div>
+                          <span className="text-sm text-gray-700">{team.name}</span>
+                        </label>
                       ))}
-                      {teams.length === 0 && <p className="text-gray-500 text-sm">No hay equipos disponibles.</p>}
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Equipos seleccionados: {tournamentFormData.selectedTeams.length}
+                    </p>
                   </div>
 
-                  {/* Botones */}
                   <div className="flex space-x-2 pt-4">
-                    <Button
-                      type="submit"
-                      disabled={
-                        isSubmittingTournament ||
-                        !tournamentFormData.name.trim() ||
-                        !tournamentFormData.type ||
-                        !tournamentFormData.season.trim()
-                      }
-                      className="flex-1"
-                    >
-                      {isSubmittingTournament ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Guardando...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Guardar Torneo
-                        </>
-                      )}
+                    <Button type="submit" disabled={isSubmittingTournament} className="flex-1">
+                      {isSubmittingTournament ? "Creando..." : "Crear Torneo"}
                     </Button>
                     <Button
                       type="button"
@@ -1706,19 +1885,16 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Modal para programar partidos */}
+        {/* Modal para programar partido */}
         {showScheduledMatchForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <Card className="w-full max-w-md">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Calendar className="h-6 w-6 text-blue-600" />
-                  <span>Programar Nuevo Partido</span>
-                </CardTitle>
+                <CardTitle>Programar Partido</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCreateScheduledMatch} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
                       <Input
@@ -1740,13 +1916,13 @@ const AdminDashboard: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Equipo A *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Equipo Local *</label>
                     <Select
                       value={scheduledMatchFormData.teamA}
                       onChange={(e) => setScheduledMatchFormData({ ...scheduledMatchFormData, teamA: e.target.value })}
                       required
                     >
-                      <option value="">Seleccionar equipo</option>
+                      <option value="">Seleccionar equipo local</option>
                       {teams.map((team) => (
                         <option key={team._id} value={team._id}>
                           {team.name}
@@ -1756,13 +1932,13 @@ const AdminDashboard: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Equipo B *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Equipo Visitante *</label>
                     <Select
                       value={scheduledMatchFormData.teamB}
                       onChange={(e) => setScheduledMatchFormData({ ...scheduledMatchFormData, teamB: e.target.value })}
                       required
                     >
-                      <option value="">Seleccionar equipo</option>
+                      <option value="">Seleccionar equipo visitante</option>
                       {teams.map((team) => (
                         <option key={team._id} value={team._id}>
                           {team.name}
@@ -1792,6 +1968,7 @@ const AdminDashboard: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Estadio</label>
                     <Input
+                      type="text"
                       value={scheduledMatchFormData.stadium}
                       onChange={(e) =>
                         setScheduledMatchFormData({ ...scheduledMatchFormData, stadium: e.target.value })
@@ -1803,6 +1980,7 @@ const AdminDashboard: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Árbitro</label>
                     <Input
+                      type="text"
                       value={scheduledMatchFormData.referee}
                       onChange={(e) =>
                         setScheduledMatchFormData({ ...scheduledMatchFormData, referee: e.target.value })
@@ -1811,59 +1989,19 @@ const AdminDashboard: React.FC = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Jornada</label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={scheduledMatchFormData.matchday}
-                        onChange={(e) =>
-                          setScheduledMatchFormData({
-                            ...scheduledMatchFormData,
-                            matchday: Number.parseInt(e.target.value) || 1,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                      <Select
-                        value={scheduledMatchFormData.status}
-                        onChange={(e) =>
-                          setScheduledMatchFormData({ ...scheduledMatchFormData, status: e.target.value })
-                        }
-                      >
-                        <option value="scheduled">Programado</option>
-                        <option value="confirmed">Confirmado</option>
-                        <option value="postponed">Pospuesto</option>
-                        <option value="cancelled">Cancelado</option>
-                      </Select>
-                    </div>
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
                     <Input
+                      type="text"
                       value={scheduledMatchFormData.notes}
                       onChange={(e) => setScheduledMatchFormData({ ...scheduledMatchFormData, notes: e.target.value })}
-                      placeholder="Notas adicionales (opcional)"
+                      placeholder="Notas adicionales"
                     />
                   </div>
 
                   <div className="flex space-x-2 pt-4">
                     <Button type="submit" disabled={isSubmittingScheduledMatch} className="flex-1">
-                      {isSubmittingScheduledMatch ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Programando...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Programar Partido
-                        </>
-                      )}
+                      {isSubmittingScheduledMatch ? "Programando..." : "Programar Partido"}
                     </Button>
                     <Button
                       type="button"
@@ -1877,116 +2015,6 @@ const AdminDashboard: React.FC = () => {
                 </form>
               </CardContent>
             </Card>
-          </div>
-        )}
-
-        {/* Modal de goleador */}
-        {showGoalForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between p-6 border-b">
-                <h3 className="text-lg font-semibold text-gray-800">¿Quién hizo el gol?</h3>
-                <button
-                  onClick={() => setShowGoalForm(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-4">
-                {/* Goleador */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Goleador</label>
-                  <select
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={goalFormData.playerId}
-                    onChange={(e) => {
-                      const sel = e.target.value
-                      setGoalFormData({ ...goalFormData, playerId: sel })
-                      setShowCustomPlayer(sel === "custom")
-                    }}
-                  >
-                    <option value="">Seleccionar jugador</option>
-                    {teamPlayers.map((p) => (
-                      <option key={p._id} value={p._id}>
-                        #{p.number} - {p.firstName} {p.lastName}
-                      </option>
-                    ))}
-                    <option value="custom">Otro jugador...</option>
-                  </select>
-                </div>
-
-                {showCustomPlayer && (
-                  <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Nombre del jugador"
-                      value={goalFormData.customName}
-                      onChange={(e) => setGoalFormData({ ...goalFormData, customName: e.target.value })}
-                    />
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Número del jugador"
-                      value={goalFormData.customNumber}
-                      onChange={(e) => setGoalFormData({ ...goalFormData, customNumber: e.target.value })}
-                    />
-                  </div>
-                )}
-
-                {/* Asistencia */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Asistencia (opcional)</label>
-                  <select
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={goalFormData.assistId || ""}
-                    onChange={(e) => {
-                      const sel = e.target.value
-                      setGoalFormData({ ...goalFormData, assistId: sel })
-                      setShowCustomAssist(sel === "custom")
-                    }}
-                  >
-                    <option value="">Sin asistencia</option>
-                    {teamPlayers.map((p) => (
-                      <option key={p._id} value={p._id}>
-                        #{p.number} - {p.firstName} {p.lastName}
-                      </option>
-                    ))}
-                    <option value="custom">Otro jugador...</option>
-                  </select>
-                </div>
-
-                {showCustomAssist && (
-                  <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Nombre del jugador asistente"
-                      value={goalFormData.assistCustomName || ""}
-                      onChange={(e) => setGoalFormData({ ...goalFormData, assistCustomName: e.target.value })}
-                    />
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Número del jugador asistente"
-                      value={goalFormData.assistCustomNumber || ""}
-                      onChange={(e) => setGoalFormData({ ...goalFormData, assistCustomNumber: e.target.value })}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-2 p-6 border-t">
-                <Button variant="outline" onClick={() => setShowGoalForm(false)}>
-                  Cancelar
-                </Button>
-                <Button variant="success" onClick={confirmGoal}>
-                  Confirmar Gol
-                </Button>
-              </div>
-            </div>
           </div>
         )}
       </main>
