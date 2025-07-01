@@ -35,7 +35,7 @@ const CreateClub: React.FC = () => {
 
     try {
       setIsSubmitting(true)
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/team`, newTeam)
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/team`, newTeam)
       alert("Club creado correctamente")
 
       // Reset form

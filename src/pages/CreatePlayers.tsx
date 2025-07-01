@@ -27,7 +27,7 @@ const CreatePlayers = () => {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/team`)
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/team`)
         setClubs(res.data)
       } catch (err) {
         console.error("Error al traer los clubes:", err)
@@ -84,7 +84,7 @@ const CreatePlayers = () => {
         position: p.position,
       }))
 
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/players/bulk`, payload)
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/players/bulk`, payload)
 
       alert("Jugadores creados correctamente")
       navigate("/inicio")

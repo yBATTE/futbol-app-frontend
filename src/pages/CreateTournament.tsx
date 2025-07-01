@@ -23,7 +23,7 @@ const CreateTournament = () => {
   useEffect(() => {
     const fetchTeams = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/team`)
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/team`)
         setTeams(res.data)
       } catch (err) {
         console.error("Error al traer los equipos:", err)
@@ -57,7 +57,7 @@ const CreateTournament = () => {
         teams: selectedTeams,
       }
 
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/tournaments`, payload)
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/tournaments`, payload)
 
       alert("Torneo creado correctamente")
       navigate("/inicio")

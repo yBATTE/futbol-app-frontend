@@ -96,7 +96,7 @@ const Profile: React.FC = () => {
         const token = await getAccessTokenSilently()
 
         await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/users`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/users`,
           {
             auth0Id: user?.sub,
             email: user?.email,

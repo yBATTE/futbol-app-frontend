@@ -134,7 +134,7 @@ const TeamLineup: React.FC = () => {
   const fetchPlayers = async (teamId: string) => {
     setLoading(true)
     try {
-      const res = await axios.get(`${process.env.VITE_BACKEND_URL}/players/lineup/${teamId}`)
+      const res = await axios.get(`${process.env.VITE_BACKEND_URL}/api/players/lineup/${teamId}`)
       setPlayers(res.data)
     } catch (error) {
       console.error("Error al obtener jugadores:", error)

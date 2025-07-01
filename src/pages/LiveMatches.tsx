@@ -235,7 +235,7 @@ const LiveMatches: React.FC = () => {
 
   const fetchMatches = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/live-matches`)
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/live-matches`)
       console.log("Live matches data:", res.data)
 
       // Fetch tournament data for each match if not populated
@@ -243,7 +243,7 @@ const LiveMatches: React.FC = () => {
         res.data.map(async (match: any) => {
           if (typeof match.tournament === "string") {
             try {
-              const tournamentRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/tournaments/${match.tournament}`)
+              const tournamentRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/tournaments/${match.tournament}`)
               return { ...match, tournament: tournamentRes.data }
             } catch (error) {
               console.error("Error fetching tournament:", error)
@@ -262,7 +262,7 @@ const LiveMatches: React.FC = () => {
 
   const fetchTeams = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/team`)
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/team`)
       setTeams(res.data)
     } catch (e) {
       console.error(e)
