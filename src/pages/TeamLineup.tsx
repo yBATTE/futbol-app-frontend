@@ -124,7 +124,7 @@ const TeamLineup: React.FC = () => {
 
   const fetchTeams = async () => {
     try {
-      const res = await axios.get(`${process.env.BACKEND_URL}/api/team`)
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/team`)
       setTeams(res.data)
     } catch (error) {
       console.error("Error al obtener los equipos:", error)
@@ -134,7 +134,7 @@ const TeamLineup: React.FC = () => {
   const fetchPlayers = async (teamId: string) => {
     setLoading(true)
     try {
-      const res = await axios.get(`${process.env.BACKEND_URL}/players/lineup/${teamId}`)
+      const res = await axios.get(`${process.env.VITE_BACKEND_URL}/players/lineup/${teamId}`)
       setPlayers(res.data)
     } catch (error) {
       console.error("Error al obtener jugadores:", error)

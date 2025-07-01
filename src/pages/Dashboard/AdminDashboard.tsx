@@ -283,9 +283,8 @@ const AdminDashboard: React.FC = () => {
       })
 
       const token = await getAccessTokenSilently()
-      console.log("🔑 Token obtenido:", token.substring(0, 50) + "...")
 
-      const response = await axios.get(`${process.env.BACKEND_URL}/users/profile`, {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/users/profile`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -334,7 +333,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchTeams = async () => {
     try {
-      const res = await axios.get(`${process.env.BACKEND_URL}/team`)
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/team`)
       setTeams(res.data)
     } catch (e) {
       console.error(e)
@@ -343,7 +342,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchTournaments = async () => {
     try {
-      const res = await axios.get(`${process.env.BACKEND_URL}/tournaments`)
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/tournaments`)
       setTournaments(res.data)
     } catch (e) {
       console.error(e)
@@ -352,7 +351,7 @@ const AdminDashboard: React.FC = () => {
 
   const fetchLiveMatches = async () => {
     try {
-      const res = await axios.get(`${process.env.BACKEND_URL}/live-matches`)
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/live-matches`)
       setLiveMatches(res.data)
     } catch (e) {
       console.error(e)
@@ -363,7 +362,7 @@ const AdminDashboard: React.FC = () => {
   const handleMatchAction = async (id: string, action: string, body?: any) => {
     try {
       console.log(`Ejecutando acción ${action} para partido ${id}`, body)
-      await axios.post(`${process.env.BACKEND_URL}/live-matches/${id}/${action}`, body)
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/live-matches/${id}/${action}`, body)
       fetchLiveMatches()
       alert(`Acción ${action} ejecutada correctamente`)
     } catch (error) {
@@ -389,7 +388,7 @@ const AdminDashboard: React.FC = () => {
       setIsSubmittingMatch(true)
       const token = await getAccessTokenSilently()
       await axios.post(
-        `${process.env.BACKEND_URL}/live-matches`,
+        `${import.meta.env.VITE_BACKEND_URL}/live-matches`,
         { ...matchFormData, date: new Date() },
         {
           headers: {
@@ -428,7 +427,7 @@ const AdminDashboard: React.FC = () => {
 
     try {
       setIsSubmittingClub(true)
-      await axios.post(`${process.env.BACKEND_URL}/team`, clubFormData)
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/team`, clubFormData)
       alert("Club creado correctamente")
       setClubFormData({
         name: "",
@@ -496,7 +495,7 @@ const AdminDashboard: React.FC = () => {
         position: p.position,
       }))
 
-      await axios.post(`${process.env.BACKEND_URL}/players/bulk`, payload)
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/players/bulk`, payload)
       alert("Jugadores creados correctamente")
       setPlayersFormData({
         clubId: "",
@@ -540,7 +539,7 @@ const AdminDashboard: React.FC = () => {
         teams: tournamentFormData.selectedTeams,
       }
 
-      await axios.post(`${process.env.BACKEND_URL}/tournaments`, payload)
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/tournaments`, payload)
       alert("Torneo creado correctamente")
       setTournamentFormData({
         name: "",
@@ -576,7 +575,7 @@ const AdminDashboard: React.FC = () => {
     try {
       setIsSubmittingScheduledMatch(true)
       const token = await getAccessTokenSilently()
-      await axios.post(`${process.env.BACKEND_URL}/scheduled-matches`, scheduledMatchFormData, {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/scheduled-matches`, scheduledMatchFormData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -790,7 +789,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleGoalClick = async (matchId: string, team: "A" | "B", teamId: string) => {
     try {
-      const res = await axios.get(`${process.env.BACKEND_URL}/players/lineup/${teamId}`)
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/players/lineup/${teamId}`)
       setTeamPlayers(res.data)
       setGoalFormData({
         matchId,
@@ -838,7 +837,7 @@ const AdminDashboard: React.FC = () => {
     }
 
     try {
-      await axios.put(`${process.env.BACKEND_URL}/live-matches/${goalFormData.matchId}/score`, body)
+      await axios.put(`${import.meta.env.VITE_BACKEND_URL}/live-matches/${goalFormData.matchId}/score`, body)
       setShowGoalForm(false)
       fetchLiveMatches()
       alert("Gol registrado correctamente")

@@ -215,7 +215,7 @@ const AddMatch: React.FC<AddMatchProps> = ({ onAddMatch }) => {
 
     try {
       setIsSubmitting(true)
-      const response = await axios.post(`${process.env.BACKEND_URL}/api/matches`, newMatch)
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/matches`, newMatch)
       alert("Partido guardado correctamente")
       onAddMatch(response.data)
 

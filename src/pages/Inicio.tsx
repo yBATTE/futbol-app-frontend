@@ -259,9 +259,9 @@ const Inicio: React.FC = () => {
         setLoading(true)
         // Llamadas principales
         const [topScorerRes, liveMatchesRes, tournamentsRes] = await Promise.all([
-          axios.get(`${process.env.BACKEND_URL}/players/topscorer`),
-          axios.get(`${process.env.BACKEND_URL}/live-matches`),
-          axios.get(`${process.env.BACKEND_URL}/tournaments`),
+          axios.get(`${import.meta.env.VITE_BACKEND_URL}/players/topscorer`),
+          axios.get(`${import.meta.env.VITE_BACKEND_URL}/live-matches`),
+          axios.get(`${import.meta.env.VITE_BACKEND_URL}/tournaments`),
         ])
 
         setTopScorer(topScorerRes.data)
@@ -278,7 +278,7 @@ const Inicio: React.FC = () => {
         // Llamadas adicionales opcionales
         try {
           const [topScorersRes] = await Promise.all([
-            axios.get(`${process.env.BACKEND_URL}/players/top-scorers`).catch(() => ({ data: [] })),
+            axios.get(`${import.meta.env.VITE_BACKEND_URL}/players/top-scorers`).catch(() => ({ data: [] })),
           ])
 
           setTopScorers(topScorersRes.data)
@@ -300,7 +300,7 @@ const Inicio: React.FC = () => {
 
     try {
       setLoadingStandings(true)
-      const standingsRes = await axios.get(`${process.env.BACKEND_URL}/team-tournament-standings/${tournamentId}/standings`)
+      const standingsRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/team-tournament-standings/${tournamentId}/standings`)
       setStandings(standingsRes.data)
     } catch (error) {
       console.error("Error cargando tabla de posiciones:", error)
@@ -316,7 +316,7 @@ const Inicio: React.FC = () => {
       console.log("🔍 Fetching upcoming matches for tournament:", tournamentId)
 
       // Usar el nuevo endpoint de upcoming
-      let url = `${process.env.BACKEND_URL}/scheduled-matches/upcoming`
+      let url = `${import.meta.env.VITE_BACKEND_URL}/scheduled-matches/upcoming`
 
       // Agregar filtros si es necesario
       const params = new URLSearchParams()
@@ -361,7 +361,7 @@ const Inicio: React.FC = () => {
     try {
       setLoadingScorers(true)
       console.log("Cargando goleadores para torneo:", tournamentId)
-      const scorersRes = await axios.get(`${process.env.BACKEND_URL}/goal`)
+      const scorersRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/goal`)
       console.log("Datos de goles obtenidos:", scorersRes.data)
 
       // Filtrar goles por torneo y agrupar por jugador

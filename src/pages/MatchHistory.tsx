@@ -87,7 +87,7 @@ const MatchHistory: React.FC<MatchHistoryProps> = () => {
   useEffect(() => {
     const fetchMatches = async () => {
       try {
-        const res = await axios.get(`${process.env.BACKEND_URL}/matches`)
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/matches`)
         setMatches(res.data)
       } catch (err) {
         console.error("Error al obtener partidos:", err)
