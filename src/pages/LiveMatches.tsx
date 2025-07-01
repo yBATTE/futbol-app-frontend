@@ -57,15 +57,15 @@ interface GoalType {
   _id: string
   player: {
     _id: string
-    firstName: string
-    lastName: string
-    number: number
+    firstName?: string
+    lastName?: string
+    number?: number
   }
   assist?: {
     _id: string
-    firstName: string
-    lastName: string
-    number: number
+    firstName?: string
+    lastName?: string
+    number?: number
   }
   team: string
   minute: number
@@ -177,18 +177,21 @@ const GoalsList: React.FC<{ goals?: GoalType[]; teamId: string; teamName: string
     <ul className="space-y-2">
       {teamGoals.map((goal) => (
         <li
-          key={goal._id}
+          key={goal?._id ?? Math.random()}
           className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md"
         >
           <span>
-            {goal.player.firstName} {goal.player.lastName} #{goal.player.number}
+            {goal?.player
+              ? `${goal.player.firstName} ${goal.player.lastName} #${goal.player.number}`
+              : "Jugador desconocido"}
           </span>
-          <span>{goal.minute}'</span>
+          <span>{goal?.minute ?? "--"}'</span>
         </li>
       ))}
     </ul>
   )
 }
+
 
 
 // Componente de reloj en tiempo real
